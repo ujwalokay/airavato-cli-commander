@@ -3,14 +3,8 @@ import { Building2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, Field, EmptyState } from "@/components/head/primitives";
 import { StatusBadge, Mono } from "@/components/head/status-badge";
-import {
-  auditLogs,
-  cafeById,
-  fmtDate,
-  installations,
-  licenses,
-  relTime,
-} from "@/lib/head-data";
+import { fmtDate, relTime, type AuditRecord, type Installation } from "@/lib/head-data";
+import { useAuditLogs, useCafe } from "@/lib/head-db";
 
 export const Route = createFileRoute("/cafes/$cafeId")({
   head: () => ({
@@ -31,7 +25,8 @@ export const Route = createFileRoute("/cafes/$cafeId")({
 
 function CafeDetail() {
   const { cafeId } = Route.useParams();
-  const cafe = cafeById(cafeId);
+  const { cafe, installations: insts, license } = useCafe(cafeId);
+  const { data: auditLogs } = useAuditLogs();
 
   if (!cafe) {
     return (
@@ -43,9 +38,7 @@ function CafeDetail() {
     );
   }
 
-  const insts = installations.filter((i) => i.cafeId === cafe.id);
-  const license = licenses.find((l) => l.cafeId === cafe.id);
-  const trail = auditLogs.filter((a) => a.cafeId === cafe.id).slice(0, 8);
+  const trail = auditLogs.filter((a: AuditRecord) => a.cafeId === cafe.id).slice(0, 8);
 
   return (
     <>
@@ -114,7 +107,7 @@ function CafeDetail() {
             <CardTitle>Installations ({insts.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {insts.map((i) => (
+            {insts.map((i: Installation) => (
               <Link
                 key={i.id}
                 to="/installations/$installationId"
@@ -139,7 +132,7 @@ function CafeDetail() {
             {trail.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recorded actions for this cafe yet.</p>
             ) : (
-              trail.map((a) => (
+              trail.map((a: AuditRecord) => (
                 <div key={a.id} className="border-b pb-2 text-sm last:border-0">
                   <div className="flex items-center justify-between gap-2">
                     <Mono>{a.action}</Mono>

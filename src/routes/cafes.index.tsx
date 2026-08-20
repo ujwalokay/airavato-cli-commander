@@ -21,7 +21,8 @@ import { DataTable, type Column } from "@/components/head/data-table";
 import { StatusBadge, Mono } from "@/components/head/status-badge";
 import { ConfirmAction, EmptyState, PageHeader } from "@/components/head/primitives";
 import { useSession } from "@/components/head/session";
-import { cafes, fmtDate, relTime, type Cafe } from "@/lib/head-data";
+import { fmtDate, relTime, type Cafe } from "@/lib/head-data";
+import { usePlatform } from "@/lib/head-db";
 
 export const Route = createFileRoute("/cafes/")({
   head: () => ({
@@ -49,11 +50,13 @@ function CafeDirectory() {
   const [health, setHealth] = useState("all");
   const [pending, setPending] = useState<{ cafe: Cafe; kind: "suspend" | "archive" } | null>(null);
 
+  const { data: platform } = usePlatform();
+  const cafes = platform.cafes;
   const scoped = session.scopedCafeId
-    ? cafes.filter((c) => c.id === session.scopedCafeId)
+    ? cafes.filter((c: Cafe) => c.id === session.scopedCafeId)
     : cafes;
   const rows = scoped.filter(
-    (c) =>
+    (c: Cafe) =>
       (license === "all" || c.license === license) && (health === "all" || c.health === health),
   );
 
@@ -87,7 +90,7 @@ function CafeDirectory() {
     {
       key: "hb",
       header: "Last heartbeat",
-      sort: (c) => c.lastHeartbeat,
+      sort: (c) => c.lastHeartbeat ?? 0,
       render: (c) => <span className="text-muted-foreground">{relTime(c.lastHeartbeat)}</span>,
     },
     {
