@@ -1,9 +1,17 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { PageHeader, Field, Hint } from "@/components/head/primitives";
 import { StatusBadge } from "@/components/head/status-badge";
 import { ROLES, PERMISSION_LIST, can } from "@/lib/head-data";
 import { useSession } from "@/components/head/session";
+import { useSettings, useSaveSettings } from "@/lib/head-db";
+
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
