@@ -32,12 +32,64 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const session = useSession();
+  const { data: settings, isLoading } = useSettings();
+  const save = useSaveSettings({ name: session.name, role: session.role });
+  const editable = session.can("settings.manage");
+
+  const [form, setForm] = useState({
+    grace_period_days: 14,
+    heartbeat_interval_min: 15,
+    offline_threshold_hours: 48,
+    backup_warning_hours: 36,
+    rollout_failure_threshold_pct: 5,
+    audit_retention_days: 730,
+    support_email: "",
+    support_phone: "",
+    public_booking_default: true,
+    notify_email: true,
+    notify_in_app: true,
+  });
+
+  useEffect(() => {
+    if (!settings) return;
+    setForm({
+      grace_period_days: settings.gracePeriodDays,
+      heartbeat_interval_min: settings.heartbeatIntervalMin,
+      offline_threshold_hours: settings.offlineThresholdHours,
+      backup_warning_hours: settings.backupWarningHours,
+      rollout_failure_threshold_pct: settings.rolloutFailureThresholdPct,
+      audit_retention_days: settings.auditRetentionDays,
+      support_email: settings.supportEmail,
+      support_phone: settings.supportPhone,
+      public_booking_default: settings.publicBookingDefault,
+      notify_email: settings.notifyEmail,
+      notify_in_app: settings.notifyInApp,
+    });
+  }, [settings]);
+
+  const num = (k: keyof typeof form) => (v: string) =>
+    setForm((f) => ({ ...f, [k]: Number(v) || 0 }));
 
   return (
     <>
       <PageHeader
         title="Platform settings"
-        description="These defaults apply to every cafe tenant. Changing them affects all 100 installations and is recorded in the audit log."
+        description="These defaults apply to every cafe tenant. Changes are saved to the platform database and recorded in the audit log."
+        actions={
+          editable ? (
+            <Button
+              disabled={save.isPending || isLoading}
+              onClick={() =>
+                save.mutate(form, {
+                  onSuccess: () => toast.success("Platform settings saved"),
+                  onError: (e) => toast.error((e as Error).message),
+                })
+              }
+            >
+              {save.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          ) : undefined
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -45,15 +97,66 @@ function SettingsPage() {
           <CardHeader>
             <CardTitle>Operational thresholds</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Field label="Heartbeat warning" value="15 minutes without contact" />
-            <Field label="Heartbeat critical" value="2 hours without contact" />
-            <Field label="Offline licence grace" value="14 days" />
-            <Field label="Sync retry ceiling" value="8 attempts, exponential backoff" />
-            <Field label="Backup expectation" value="Daily, verified locally" />
-            <Field label="Audit retention" value="Permanent, append-only" />
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="hb">Heartbeat interval (minutes)</Label>
+              <Input id="hb" type="number" disabled={!editable} value={form.heartbeat_interval_min} onChange={(e) => num("heartbeat_interval_min")(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="off">Offline threshold (hours)</Label>
+              <Input id="off" type="number" disabled={!editable} value={form.offline_threshold_hours} onChange={(e) => num("offline_threshold_hours")(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="grace">Licence grace period (days)</Label>
+              <Input id="grace" type="number" disabled={!editable} value={form.grace_period_days} onChange={(e) => num("grace_period_days")(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="bk">Backup warning (hours)</Label>
+              <Input id="bk" type="number" disabled={!editable} value={form.backup_warning_hours} onChange={(e) => num("backup_warning_hours")(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ro">Rollout failure threshold (%)</Label>
+              <Input id="ro" type="number" disabled={!editable} value={form.rollout_failure_threshold_pct} onChange={(e) => num("rollout_failure_threshold_pct")(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ar">Audit retention (days)</Label>
+              <Input id="ar" type="number" disabled={!editable} value={form.audit_retention_days} onChange={(e) => num("audit_retention_days")(e.target.value)} />
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Supported versions" value={(settings?.supportedVersions ?? []).join(", ") || "—"} mono />
+            </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Support and notifications</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="se">Support email</Label>
+              <Input id="se" disabled={!editable} value={form.support_email} onChange={(e) => setForm((f) => ({ ...f, support_email: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="sp">Support phone</Label>
+              <Input id="sp" disabled={!editable} value={form.support_phone} onChange={(e) => setForm((f) => ({ ...f, support_phone: e.target.value }))} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="pb">Public booking on by default</Label>
+              <Switch id="pb" disabled={!editable} checked={form.public_booking_default} onCheckedChange={(v) => setForm((f) => ({ ...f, public_booking_default: v }))} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ne">Email notifications</Label>
+              <Switch id="ne" disabled={!editable} checked={form.notify_email} onCheckedChange={(v) => setForm((f) => ({ ...f, notify_email: v }))} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ni">In-app notifications</Label>
+              <Switch id="ni" disabled={!editable} checked={form.notify_in_app} onCheckedChange={(v) => setForm((f) => ({ ...f, notify_in_app: v }))} />
+            </div>
+            {!editable && <Hint text="Your role can view platform settings but not change them." />}
+          </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader>
