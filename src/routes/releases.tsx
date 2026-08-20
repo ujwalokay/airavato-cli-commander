@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader, Field, Hint } from "@/components/head/primitives";
 import { StatusBadge, Mono } from "@/components/head/status-badge";
 import { useSession } from "@/components/head/session";
-import { fmtDate, installations, releases, RINGS } from "@/lib/head-data";
+import { fmtDate, RINGS, type Installation, type Release } from "@/lib/head-data";
+import { usePlatform, useReleases } from "@/lib/head-db";
 
 export const Route = createFileRoute("/releases")({
   head: () => ({
@@ -27,6 +28,9 @@ export const Route = createFileRoute("/releases")({
 
 function ReleasesPage() {
   const session = useSession();
+  const { data: platform } = usePlatform();
+  const installations = platform.installations;
+  const { data: releases } = useReleases();
 
   return (
     <>
@@ -37,7 +41,7 @@ function ReleasesPage() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {RINGS.map((ring) => {
-          const inRing = installations.filter((i) => i.ring === ring);
+          const inRing = installations.filter((i: Installation) => i.ring === ring);
           return (
             <Card key={ring}>
               <CardHeader className="pb-2">
@@ -53,7 +57,7 @@ function ReleasesPage() {
       </div>
 
       <div className="space-y-4">
-        {releases.map((r) => (
+        {releases.map((r: Release) => (
           <Card key={r.id}>
             <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
               <div>

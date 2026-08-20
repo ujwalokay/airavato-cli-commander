@@ -5,7 +5,8 @@ import { DataTable, type Column } from "@/components/head/data-table";
 import { PageHeader, EmptyState, Hint } from "@/components/head/primitives";
 import { StatusBadge, Mono } from "@/components/head/status-badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { auditLogs, fmtDateTime, type AuditRecord } from "@/lib/head-data";
+import { fmtDateTime, type AuditRecord } from "@/lib/head-data";
+import { useAuditLogs } from "@/lib/head-db";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({
@@ -27,8 +28,9 @@ export const Route = createFileRoute("/audit")({
 function AuditPage() {
   const [target, setTarget] = useState("all");
   const [result, setResult] = useState("all");
+  const { data: auditLogs } = useAuditLogs();
   const rows = auditLogs.filter(
-    (a) => (target === "all" || a.targetType === target) && (result === "all" || a.result === result),
+    (a: AuditRecord) => (target === "all" || a.targetType === target) && (result === "all" || a.result === result),
   );
 
   const columns: Column<AuditRecord>[] = [

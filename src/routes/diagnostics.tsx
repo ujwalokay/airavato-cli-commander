@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader, Field, Hint, ConfirmAction, PermissionDenied } from "@/components/head/primitives";
 import { StatusBadge, Mono } from "@/components/head/status-badge";
 import { useSession } from "@/components/head/session";
-import { installations, relTime } from "@/lib/head-data";
+import { relTime, type Installation } from "@/lib/head-data";
+import { usePlatform } from "@/lib/head-db";
 
 export const Route = createFileRoute("/diagnostics")({
   head: () => ({
@@ -29,9 +30,11 @@ export const Route = createFileRoute("/diagnostics")({
 
 function DiagnosticsPage() {
   const session = useSession();
-  const [id, setId] = useState(installations[0]?.id ?? "");
+  const { data: platform } = usePlatform();
+  const installations = platform.installations;
+  const [id, setId] = useState("");
   const [asking, setAsking] = useState(false);
-  const inst = installations.find((i) => i.id === id);
+  const inst = installations.find((i: Installation) => i.id === id) ?? installations[0];
 
   if (!session.can("support.bundle")) return <PermissionDenied what="run support diagnostics" />;
 
@@ -47,12 +50,12 @@ function DiagnosticsPage() {
           <CardTitle>Select an installation</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-2">
-          <Select value={id} onValueChange={setId}>
+          <Select value={inst?.id ?? ""} onValueChange={setId}>
             <SelectTrigger className="w-full max-w-md" aria-label="Installation">
               <SelectValue placeholder="Choose an installation" />
             </SelectTrigger>
             <SelectContent>
-              {installations.slice(0, 60).map((i) => (
+              {installations.slice(0, 60).map((i: Installation) => (
                 <SelectItem key={i.id} value={i.id}>
                   {i.cafeName} — {i.machineName}
                 </SelectItem>
